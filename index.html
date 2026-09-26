@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Legacy Royale</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background: #1e272e; color: white; font-family: sans-serif; text-align: center; overflow: hidden; }
+        #game-board {
+            width: 100vw; height: 72vh; background: #2ed573; position: relative; border-bottom: 5px solid #ffa502;
+        }
+        .tower { position: absolute; width: 50px; height: 50px; border-radius: 8px; line-height: 50px; font-weight: bold; font-size: 12px; }
+        .enemy-tower { background: #ff4757; color: white; top: 20px; }
+        .player-tower { background: #1e90ff; color: white; bottom: 20px; }
+        #e-king { left: calc(50% - 25px); }
+        #e-left { left: 15%; } #e-right { right: 15%; }
+        #p-king { left: calc(50% - 25px); }
+        #p-left { left: 15%; } #p-right { right: 15%; }
+        
+        .unit { position: absolute; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; line-height: 30px; transition: all 0.3s linear; }
+        
+        #ui { height: 28vh; background: #2f3542; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
+        #elixir-bar { width: 100%; height: 15px; background: #57606f; border-radius: 10px; overflow: hidden; margin-top: 5px; }
+        #elixir-fill { width: 0%; height: 100%; background: #eccc68; transition: width 0.2s; }
+        .cards { display: flex; justify-content: space-around; margin-top: 10px; }
+        .card { width: 80px; height: 80px; background: #747d8c; border: 2px solid #f1f2f6; border-radius: 10px; font-size: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .card span { font-size: 11px; color: #eccc68; font-weight: bold; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="game-board">
+    <!-- برج‌های دشمن -->
+    <div id="e-left" class="tower enemy-tower">100</div>
+    <div id="e-king" class="tower enemy-tower">200</div>
+    <div id="e-right" class="tower enemy-tower">100</div>
+
+    <!-- برج‌های خودمان -->
+    <div id="p-left" class="tower player-tower">100</div>
+    <div id="p-king" class="tower player-tower">200</div>
+    <div id="p-right" class="tower player-tower">100</div>
+</div>
+
+<div id="ui">
+    <div>
+        <span>🧪 اکسیر: <b id="elixir-num">0</b>/10</span>
+        <div id="elixir-bar"><div id="elixir-fill"></div></div>
+    </div>
+    <div class="cards">
+        <div class="card" onclick="spawnUnit('⚔️', 3)">⚔️<span>3 اکسیر</span></div>
+        <div class="card" onclick="spawnUnit('🏹', 2)">🏹<span>2 اکسیر</span></div>
+        <div class="card" onclick="spawnUnit('🛡️', 5)">🛡️<span>5 اکسیر</span></div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    let elixir = 0;
+    const maxElixir = 10;
+    const board = document.getElementById('game-board');
+
+    // پر شدن اکسیر
+    setInterval(() => {
+        if (elixir < maxElixir) {
+            elixir += 1;
+            document.getElementById('elixir-num').innerText = elixir;
+            document.getElementById('elixir-fill').style.width = (elixir / maxElixir * 100) + '%';
+        }
+    }, 1500);
+
+    // ساخت نیرو و حرکت به سمت دشمن
+    function spawnUnit(emoji, cost) {
+        if (elixir < cost) {
+            tg.showAlert("اکسیر کافی نداری!");
+            return;
+        }
+        elixir -= cost;
+        document.getElementById('elixir-num').innerText = elixir;
+        document.getElementById('elixir-fill').style.width = (elixir / maxElixir * 100) + '%';
+
+        const unit = document.createElement('div');
+        unit.className = 'unit';
+        unit.innerText = emoji;
+        unit.style.bottom = '80px';
+        unit.style.left = (Math.random() * 60 + 20) + '%';
+        board.appendChild(unit);
+
+        // انیمیشن حرکت به سمت برج دشمن
+        let pos = 80;
+        const move = setInterval(() => {
+            pos += 5;
+            unit.style.bottom = pos + 'px';
+            if (pos >= board.clientHeight - 80) {
+                clearInterval(move);
+                unit.remove();
+                hitEnemy();
+            }
+        }, 100);
+    }
+
+    function hitEnemy() {
+        const enemy = document.getElementById('e-left');
+        let hp = parseInt(enemy.innerText);
+        if (hp > 0) {
+            enemy.innerText = Math.max(0, hp - 20);
+            if (hp - 20 <= 0) tg.showAlert("🎉 برج دشمن رو زدی!");
+        }
+    }
+</script>
+</body>
+</html>

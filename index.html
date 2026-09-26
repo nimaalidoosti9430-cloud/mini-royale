@@ -3,184 +3,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Legacy Royale</title>
+    <title>Clash Royale Legacy - Complete</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: #1a1a2e; color: white; text-align: center; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: system-ui, sans-serif; }
+        body { background: #090d16; color: white; text-align: center; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* زمین بازی چمنی */
-        #game-board {
-            width: 100vw; 
-            height: 70vh; 
-            background: #27ae60;
-            background-image: radial-gradient(#2ecc71 15%, transparent 16%), radial-gradient(#2ecc71 15%, transparent 16%);
-            background-size: 30px 30px;
-            background-position: 0 0, 15px 15px;
-            position: relative; 
-            border-bottom: 5px solid #d35400;
+        #top-bar {
+            height: 6vh; background: #1e293b; display: flex; justify-content: space-around; align-items: center;
+            border-bottom: 2px solid #334155; font-weight: bold; font-size: 13px;
         }
 
-        /* رودخانه و پل‌ها */
-        .river {
-            position: absolute; top: 48%; width: 100%; height: 4%;
-            background: #3498db; border-top: 2px solid #2980b9; border-bottom: 2px solid #2980b9;
-        }
-        .bridge {
-            position: absolute; top: 46%; width: 45px; height: 8%;
-            background: #e67e22; border: 2px solid #d35400; border-radius: 4px; z-index: 2;
-        }
-        #b-left { left: 15%; }
-        #b-right { right: 15%; }
+        #game-container { width: 100vw; height: 60vh; position: relative; }
 
-        /* برج‌ها */
-        .tower { 
-            position: absolute; width: 50px; height: 50px; border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 13px; color: #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid #fff;
+        #bottom-nav {
+            height: 7vh; background: #0f172a; display: flex; justify-content: space-around; align-items: center;
+            border-top: 2px solid #334155;
         }
-        .tower span { background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 8px; }
-        .enemy-tower { background: #e74c3c; }
-        .player-tower { background: #3498db; }
-
-        #e-king { top: 15px; left: calc(50% - 30px); width: 60px; height: 60px; border-color: #f1c40f; }
-        #e-left { top: 35px; left: 12%; } 
-        #e-right { top: 35px; right: 12%; }
-
-        #p-king { bottom: 15px; left: calc(50% - 30px); width: 60px; height: 60px; border-color: #f1c40f; }
-        #p-left { bottom: 35px; left: 12%; } 
-        #p-right { bottom: 35px; right: 12%; }
-
-        /* نیروی جنگجو */
-        .unit { 
-            position: absolute; width: 36px; height: 36px; border-radius: 50%; 
-            font-size: 20px; display: flex; align-items: center; justify-content: center;
-            background: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 5;
+        .nav-btn {
+            flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 11px; color: #94a3b8; cursor: pointer;
         }
+        .nav-btn.active { color: #facc15; background: #1e293b; }
 
-        /* پنل کارت‌ها و اکسیر */
-        #ui { 
-            height: 30vh; background: #16213e; padding: 10px; 
-            display: flex; flex-direction: column; justify-content: space-around;
+        #battle-ui { 
+            height: 27vh; background: #0f172a; padding: 5px; 
+            display: flex; flex-direction: column; justify-content: space-between;
         }
+        .elixir-container { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #facc15; }
+        #elixir-bar { width: 60%; height: 12px; background: #1e293b; border-radius: 6px; overflow: hidden; border: 1.5px solid #facc15; }
+        #elixir-fill { width: 50%; height: 100%; background: linear-gradient(90deg, #d97706, #facc15); }
         
-        .elixir-container {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            font-size: 14px; font-weight: bold; color: #f1c40f;
-        }
-        #elixir-bar { 
-            width: 65%; height: 14px; background: #0f3460; 
-            border-radius: 10px; overflow: hidden; border: 1.5px solid #f1c40f;
-        }
-        #elixir-fill { width: 0%; height: 100%; background: #f1c40f; transition: width 0.2s; }
-
-        .cards { display: flex; justify-content: space-around; }
+        .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 2px; }
         .card { 
-            width: 90px; height: 90px; background: #0f3460; 
-            border: 2px solid #e94560; border-radius: 12px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            cursor: pointer;
+            height: 65px; background: linear-gradient(145deg, #1e293b, #0f172a); 
+            border: 2px solid #38bdf8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 10px;
         }
-        .card:active { transform: scale(0.95); }
-        .card .icon { font-size: 28px; }
-        .card span { font-size: 11px; color: #f1c40f; font-weight: bold; margin-top: 4px; }
+
+        .tab-view { display: none; height: 87vh; padding: 15px; overflow-y: auto; background: #0f172a; }
+        .shop-item, .chest-item {
+            background: #1e293b; border-radius: 12px; padding: 12px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155;
+        }
+        .btn { background: #22c55e; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="game-board">
-    <div class="river"></div>
-    <div id="b-left" class="bridge"></div>
-    <div id="b-right" class="bridge"></div>
-
-    <div id="e-left" class="tower enemy-tower"><span>100</span></div>
-    <div id="e-king" class="tower enemy-tower"><span>200</span></div>
-    <div id="e-right" class="tower enemy-tower"><span>100</span></div>
-
-    <div id="p-left" class="tower player-tower"><span>100</span></div>
-    <div id="p-king" class="tower player-tower"><span>200</span></div>
-    <div id="p-right" class="tower player-tower"><span>100</span></div>
+<div id="top-bar">
+    <div>🏆 <span id="trophy-val">450</span></div>
+    <div>🪙 <span id="gold-val">1200</span></div>
+    <div>💎 <span id="gem-val">80</span></div>
 </div>
 
-<div id="ui">
+<div id="game-container"></div>
+
+<div id="shop-view" class="tab-view">
+    <h3 style="color: #facc15; margin-bottom: 10px;">🛒 فروشگاه کارت‌ها</h3>
+    <div class="shop-item">
+        <div><b>🐉 بیبی دراگون</b><br><small>نیروی هوایی</small></div>
+        <button class="btn" onclick="buyCard('dragon', 400)">400 🪙</button>
+    </div>
+    <div class="shop-item">
+        <div><b>⚡ اسپل زپ</b><br><small>آسیب منطقه‌ای</small></div>
+        <button class="btn" onclick="buyCard('zap', 150)">150 🪙</button>
+    </div>
+</div>
+
+<div id="chests-view" class="tab-view">
+    <h3 style="color: #facc15; margin-bottom: 10px;">🧰 صندوق‌ها</h3>
+    <div class="chest-item">
+        <div><b>📦 صندوق رایگان</b><br><small>آماده دریافت</small></div>
+        <button class="btn" onclick="openChest('free')">باز کردن</button>
+    </div>
+    <div class="chest-item">
+        <div><b>🥇 صندوق طلایی</b><br><small>۴۰۰ سکه</small></div>
+        <button class="btn" onclick="openChest('gold')">50 💎</button>
+    </div>
+</div>
+
+<div id="battle-ui">
     <div class="elixir-container">
-        <span>🧪 اکسیر: <b id="elixir-num">0</b>/10</span>
+        <span>🧪 اکسیر: <b id="elixir-num">5</b>/10</span>
         <div id="elixir-bar"><div id="elixir-fill"></div></div>
     </div>
     <div class="cards">
-        <div class="card" onclick="spawnUnit('⚔️', 3)">
-            <div class="icon">⚔️</div>
-            <span>3 اکسیر</span>
-        </div>
-        <div class="card" onclick="spawnUnit('🏹', 2)">
-            <div class="icon">🏹</div>
-            <span>2 اکسیر</span>
-        </div>
-        <div class="card" onclick="spawnUnit('🛡️', 5)">
-            <div class="icon">🛡️</div>
-            <span>5 اکسیر</span>
-        </div>
+        <div class="card" onclick="spawnUnit('knight', 'player')"><span>⚔️</span><b>شوالیه (3)</b></div>
+        <div class="card" onclick="spawnUnit('archer', 'player')"><span>🏹</span><b>کماندار (2)</b></div>
+        <div class="card" onclick="spawnUnit('valkyrie', 'player')"><span>🪓</span><b>والکری (4)</b></div>
+        <div class="card" onclick="spawnUnit('giant', 'player')"><span>🛡️</span><b>غول (5)</b></div>
+        <div class="card" onclick="spawnUnit('dragon', 'player')"><span>🐉</span><b>دراگون (4)</b></div>
+        <div class="card" onclick="spawnUnit('skeletons', 'player')"><span>💀</span><b>اسکلت (1)</b></div>
+        <div class="card" onclick="spawnUnit('wallbreaker', 'player')"><span>💣</span><b>بمب‌افکن (2)</b></div>
+        <div class="card" onclick="spawnUnit('zap', 'player')"><span>⚡</span><b>زپ (2)</b></div>
     </div>
+</div>
+
+<div id="bottom-nav">
+    <div class="nav-btn" onclick="openTab('shop')">🛒<br>فروشگاه</div>
+    <div class="nav-btn active" onclick="openTab('battle')">⚔️<br>نبرد</div>
+    <div class="nav-btn" onclick="openTab('chests')">🧰<br>صندوق‌ها</div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    let elixir = 0;
+    // سیستم ذخیره‌سازی
+    let gold = parseInt(localStorage.getItem('gold')) || 1200;
+    let gems = parseInt(localStorage.getItem('gems')) || 80;
+    let trophies = parseInt(localStorage.getItem('trophies')) || 450;
+    let elixir = 5;
+    let enemyElixir = 5;
     const maxElixir = 10;
-    const board = document.getElementById('game-board');
+    let phaserScene = null;
 
-    setInterval(() => {
-        if (elixir < maxElixir) {
-            elixir += 1;
-            document.getElementById('elixir-num').innerText = elixir;
-            document.getElementById('elixir-fill').style.width = (elixir / maxElixir * 100) + '%';
-        }
-    }, 1200);
+    function saveState() {
+        localStorage.setItem('gold', gold);
+        localStorage.setItem('gems', gems);
+        localStorage.setItem('trophies', trophies);
+        document.getElementById('gold-val').innerText = gold;
+        document.getElementById('gem-val').innerText = gems;
+        document.getElementById('trophy-val').innerText = trophies;
+    }
+    saveState();
 
-    function spawnUnit(emoji, cost) {
-        if (elixir < cost) {
-            tg.showAlert("اکسیر کافی نداری!");
-            return;
-        }
-        elixir -= cost;
-        document.getElementById('elixir-num').innerText = elixir;
-        document.getElementById('elixir-fill').style.width = (elixir / maxElixir * 100) + '%';
-
-        const unit = document.createElement('div');
-        unit.className = 'unit';
-        unit.innerText = emoji;
-        unit.style.bottom = '80px';
-        unit.style.left = (Math.random() * 50 + 25) + '%';
-        board.appendChild(unit);
-
-        let pos = 80;
-        const move = setInterval(() => {
-            pos += 5;
-            unit.style.bottom = pos + 'px';
-            if (pos >= board.clientHeight - 80) {
-                clearInterval(move);
-                unit.remove();
-                hitEnemy();
-            }
-        }, 80);
+    // موتور صوتی وب
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(freq, duration) {
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = freq;
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
     }
 
-    function hitEnemy() {
-        const enemy = document.getElementById('e-left').querySelector('span');
-        let hp = parseInt(enemy.innerText);
-        if (hp > 0) {
-            hp = Math.max(0, hp - 25);
-            enemy.innerText = hp;
-            if (hp <= 0) {
-                document.getElementById('e-left').style.opacity = '0.3';
-                tg.showAlert("🎉 برج سمت چپ دشمن نابود شد!");
-            }
+    function openTab(tab) {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
+
+        if (tab === 'battle') {
+            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('battle-ui').style.display = 'flex';
+        } else {
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('battle-ui').style.display = 'none';
+            document.getElementById(tab + '-view').style.display = 'block';
         }
+    }
+
+    function buyCard(card, cost) {
+        if (gold >= cost) {
+            gold -= cost;
+            saveState();
+            tg.showAlert("کارت با موفقیت خریداری شد!");
+        } else {
+            tg.showAlert("سکه کافی نداری!");
+        }
+    }
+
+    function openChest(type) {
+        if (type === 'free') {
+            gold += 100;
+            gems += 5;
+            tg.showAlert("شما ۱۰۰ سکه و ۵ جم دریافت کردید!");
+        } else if (type === 'gold' && gems >= 50) {
+            gems -= 50;
+            gold += 400;
+            tg.showAlert("شما ۴۰۰ سکه دریافت کردید!");
+        }
+        saveState();
+    }
+
+    // مدیریت اکسیر بازیکن و دشمن
+    setInterval(() => {
+        if (elixir < maxElixir) {
+            elixir = Math.min(maxElixir, elixir + 0.5);
+            document.getElementById('elixir-num').innerText = Math.floor(elixir);
+            document.getElementById('elixir-fill').style.width = (elixir / maxElixir * 100) + '%';
+        }
+        if (enemyElixir < maxElixir) {
+            enemyElixir = Math.min(maxElixir, enemyElixir + 0.5);
+        }
+        
+        // هوش مصنوعی ربات دشمن
+        if (enemyElixir >= 4) {
+            const botCards = ['knight', 'archer', 'valkyrie', 'giant'];
+            const randomCard = botCards[Math.floor(Math.random() * botCards.length)];
+            spawnUnit(randomCard, 'enemy');
+            enemyElixir -= 3;
+        }
+    }, 1000);
+
+    const config = {
+        type: Phaser.AUTO,
+        parent: 'game-container',
+        width: window.innerWidth,
+        height: window.innerHeight * 0.60,
+        physics: { default: 'arcade', arcade: { debug: false } },
+        scene: { create: create, update: update }
+    };
+
+    const game = new Phaser.Game(config);
+    let units = [];
+    let towers = [];
+
+    function create() {
+        phaserScene = this;
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+
+        this.add.rectangle(w/2, h/2, w, h, 0x2e7d32);
+        this.add.rectangle(w/2, h*0.5, w, h*0.06, 0x0284c7);
+        this.add.rectangle(w*0.22, h*0.5, 45, h*0.1, 0xb45309);
+        this.add.rectangle(w*0.78, h*0.5, 45, h*0.1, 0xb45309);
+
+        towers.push(createTower(this, w*0.22, h*0.12, 'enemy', 600, '🏰'));
+        towers.push(createTower(this, w*0.78, h*0.12, 'enemy', 600, '🏰'));
+        towers.push(createTower(this, w*0.5, h*0.06, 'enemy', 1000, '👑'));
+
+        towers.push(createTower(this, w*0.22, h*0.88, 'player', 600, '🏰'));
+        towers.push(createTower(this, w*0.78, h*0.88, 'player', 600, '🏰'));
+        towers.push(createTower(this, w*0.5, h*0.94, 'player', 1000, '👑'));
+    }
+
+    function createTower(scene, x, y, team, hp, icon) {
+        const color = team === 'enemy' ? 0xef4444 : 0x3b82f6;
+        const container = scene.add.container(x, y);
+        const base = scene.add.rectangle(0, 0, 44, 44, color);
+        const text = scene.add.text(0, 0, icon, { fontSize: '20px' }).setOrigin(0.5);
+        container.add([base, text]);
+        scene.physics.world.enable(container);
+        return { container, team, hp, maxHp: hp, x, y };
+    }
+
+    function spawnUnit(type, team) {
+        if (!phaserScene) return;
+        const costs = { knight: 3, archer: 2, valkyrie: 4, giant: 5, dragon: 4, skeletons: 1, wallbreaker: 2, zap: 2 };
+        const cost = costs[type];
+
+        if (team === 'player') {
+            if (elixir < cost) {
+                tg.showAlert("اکسیر کافی نداری!");
+                return;
+            }
+            elixir -= cost;
+        }
+
+        playSound(440, 0.15); // صدای پیاده‌سازی نیرو
+
+        const w = phaserScene.cameras.main.width;
+        const h = phaserScene.cameras.main.height;
+
+        const icons = { knight: '⚔️', archer: '🏹', valkyrie: '🪓', giant: '🛡️', dragon: '🐉', skeletons: '💀', wallbreaker: '💣', zap: '⚡' };
+        const startY = team === 'player' ? h * 0.75 : h * 0.25;
+
+        const text = phaserScene.add.text(w/2 + (Math.random()*60 - 30), startY, icons[type], { fontSize: '22px' }).setOrigin(0.5);
+        phaserScene.physics.world.enable(text);
+
+        units.push({ obj: text, type: type, team: team, hp: 180, speed: team === 'player' ? 55 : -55, damage: 20 });
+    }
+
+    function update(time, delta) {
+        units.forEach(u => {
+            if (u.hp <= 0) return;
+            let target = towers.find(t => t.team !== u.team && t.hp > 0);
+            if (target) {
+                const dist = Phaser.Math.Distance.Between(u.obj.x, u.obj.y, target.x, target.y);
+                if (dist > 30) {
+                    phaserScene.physics.moveTo(u.obj, target.x, target.y, Math.abs(u.speed));
+                } else {
+                    u.obj.body.setVelocity(0, 0);
+                    target.hp -= u.damage * (delta / 1000);
+                    if (target.hp <= 0) target.container.setAlpha(0.3);
+                }
+            }
+        });
     }
 </script>
 </body>
 </html>
-

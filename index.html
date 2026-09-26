@@ -6,52 +6,121 @@
     <title>Legacy Royale</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body { background: #1e272e; color: white; font-family: sans-serif; text-align: center; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: #1a1a2e; color: white; text-align: center; overflow: hidden; }
+        
+        /* زمین بازی چمنی */
         #game-board {
-            width: 100vw; height: 72vh; background: #2ed573; position: relative; border-bottom: 5px solid #ffa502;
+            width: 100vw; 
+            height: 70vh; 
+            background: #27ae60;
+            background-image: radial-gradient(#2ecc71 15%, transparent 16%), radial-gradient(#2ecc71 15%, transparent 16%);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+            position: relative; 
+            border-bottom: 5px solid #d35400;
         }
-        .tower { position: absolute; width: 50px; height: 50px; border-radius: 8px; line-height: 50px; font-weight: bold; font-size: 12px; }
-        .enemy-tower { background: #ff4757; color: white; top: 20px; }
-        .player-tower { background: #1e90ff; color: white; bottom: 20px; }
-        #e-king { left: calc(50% - 25px); }
-        #e-left { left: 15%; } #e-right { right: 15%; }
-        #p-king { left: calc(50% - 25px); }
-        #p-left { left: 15%; } #p-right { right: 15%; }
+
+        /* رودخانه و پل‌ها */
+        .river {
+            position: absolute; top: 48%; width: 100%; height: 4%;
+            background: #3498db; border-top: 2px solid #2980b9; border-bottom: 2px solid #2980b9;
+        }
+        .bridge {
+            position: absolute; top: 46%; width: 45px; height: 8%;
+            background: #e67e22; border: 2px solid #d35400; border-radius: 4px; z-index: 2;
+        }
+        #b-left { left: 15%; }
+        #b-right { right: 15%; }
+
+        /* برج‌ها */
+        .tower { 
+            position: absolute; width: 50px; height: 50px; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 13px; color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); border: 2px solid #fff;
+        }
+        .tower span { background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 8px; }
+        .enemy-tower { background: #e74c3c; }
+        .player-tower { background: #3498db; }
+
+        #e-king { top: 15px; left: calc(50% - 30px); width: 60px; height: 60px; border-color: #f1c40f; }
+        #e-left { top: 35px; left: 12%; } 
+        #e-right { top: 35px; right: 12%; }
+
+        #p-king { bottom: 15px; left: calc(50% - 30px); width: 60px; height: 60px; border-color: #f1c40f; }
+        #p-left { bottom: 35px; left: 12%; } 
+        #p-right { bottom: 35px; right: 12%; }
+
+        /* نیروی جنگجو */
+        .unit { 
+            position: absolute; width: 36px; height: 36px; border-radius: 50%; 
+            font-size: 20px; display: flex; align-items: center; justify-content: center;
+            background: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 5;
+        }
+
+        /* پنل کارت‌ها و اکسیر */
+        #ui { 
+            height: 30vh; background: #16213e; padding: 10px; 
+            display: flex; flex-direction: column; justify-content: space-around;
+        }
         
-        .unit { position: absolute; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; line-height: 30px; transition: all 0.3s linear; }
-        
-        #ui { height: 28vh; background: #2f3542; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
-        #elixir-bar { width: 100%; height: 15px; background: #57606f; border-radius: 10px; overflow: hidden; margin-top: 5px; }
-        #elixir-fill { width: 0%; height: 100%; background: #eccc68; transition: width 0.2s; }
-        .cards { display: flex; justify-content: space-around; margin-top: 10px; }
-        .card { width: 80px; height: 80px; background: #747d8c; border: 2px solid #f1f2f6; border-radius: 10px; font-size: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-        .card span { font-size: 11px; color: #eccc68; font-weight: bold; margin-top: 4px; }
+        .elixir-container {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-size: 14px; font-weight: bold; color: #f1c40f;
+        }
+        #elixir-bar { 
+            width: 65%; height: 14px; background: #0f3460; 
+            border-radius: 10px; overflow: hidden; border: 1.5px solid #f1c40f;
+        }
+        #elixir-fill { width: 0%; height: 100%; background: #f1c40f; transition: width 0.2s; }
+
+        .cards { display: flex; justify-content: space-around; }
+        .card { 
+            width: 90px; height: 90px; background: #0f3460; 
+            border: 2px solid #e94560; border-radius: 12px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer;
+        }
+        .card:active { transform: scale(0.95); }
+        .card .icon { font-size: 28px; }
+        .card span { font-size: 11px; color: #f1c40f; font-weight: bold; margin-top: 4px; }
     </style>
 </head>
 <body>
 
 <div id="game-board">
-    <!-- برج‌های دشمن -->
-    <div id="e-left" class="tower enemy-tower">100</div>
-    <div id="e-king" class="tower enemy-tower">200</div>
-    <div id="e-right" class="tower enemy-tower">100</div>
+    <div class="river"></div>
+    <div id="b-left" class="bridge"></div>
+    <div id="b-right" class="bridge"></div>
 
-    <!-- برج‌های خودمان -->
-    <div id="p-left" class="tower player-tower">100</div>
-    <div id="p-king" class="tower player-tower">200</div>
-    <div id="p-right" class="tower player-tower">100</div>
+    <div id="e-left" class="tower enemy-tower"><span>100</span></div>
+    <div id="e-king" class="tower enemy-tower"><span>200</span></div>
+    <div id="e-right" class="tower enemy-tower"><span>100</span></div>
+
+    <div id="p-left" class="tower player-tower"><span>100</span></div>
+    <div id="p-king" class="tower player-tower"><span>200</span></div>
+    <div id="p-right" class="tower player-tower"><span>100</span></div>
 </div>
 
 <div id="ui">
-    <div>
+    <div class="elixir-container">
         <span>🧪 اکسیر: <b id="elixir-num">0</b>/10</span>
         <div id="elixir-bar"><div id="elixir-fill"></div></div>
     </div>
     <div class="cards">
-        <div class="card" onclick="spawnUnit('⚔️', 3)">⚔️<span>3 اکسیر</span></div>
-        <div class="card" onclick="spawnUnit('🏹', 2)">🏹<span>2 اکسیر</span></div>
-        <div class="card" onclick="spawnUnit('🛡️', 5)">🛡️<span>5 اکسیر</span></div>
+        <div class="card" onclick="spawnUnit('⚔️', 3)">
+            <div class="icon">⚔️</div>
+            <span>3 اکسیر</span>
+        </div>
+        <div class="card" onclick="spawnUnit('🏹', 2)">
+            <div class="icon">🏹</div>
+            <span>2 اکسیر</span>
+        </div>
+        <div class="card" onclick="spawnUnit('🛡️', 5)">
+            <div class="icon">🛡️</div>
+            <span>5 اکسیر</span>
+        </div>
     </div>
 </div>
 
@@ -63,16 +132,14 @@
     const maxElixir = 10;
     const board = document.getElementById('game-board');
 
-    // پر شدن اکسیر
     setInterval(() => {
         if (elixir < maxElixir) {
             elixir += 1;
             document.getElementById('elixir-num').innerText = elixir;
             document.getElementById('elixir-fill').style.width = (elixir / maxElixir * 100) + '%';
         }
-    }, 1500);
+    }, 1200);
 
-    // ساخت نیرو و حرکت به سمت دشمن
     function spawnUnit(emoji, cost) {
         if (elixir < cost) {
             tg.showAlert("اکسیر کافی نداری!");
@@ -86,10 +153,9 @@
         unit.className = 'unit';
         unit.innerText = emoji;
         unit.style.bottom = '80px';
-        unit.style.left = (Math.random() * 60 + 20) + '%';
+        unit.style.left = (Math.random() * 50 + 25) + '%';
         board.appendChild(unit);
 
-        // انیمیشن حرکت به سمت برج دشمن
         let pos = 80;
         const move = setInterval(() => {
             pos += 5;
@@ -99,17 +165,22 @@
                 unit.remove();
                 hitEnemy();
             }
-        }, 100);
+        }, 80);
     }
 
     function hitEnemy() {
-        const enemy = document.getElementById('e-left');
+        const enemy = document.getElementById('e-left').querySelector('span');
         let hp = parseInt(enemy.innerText);
         if (hp > 0) {
-            enemy.innerText = Math.max(0, hp - 20);
-            if (hp - 20 <= 0) tg.showAlert("🎉 برج دشمن رو زدی!");
+            hp = Math.max(0, hp - 25);
+            enemy.innerText = hp;
+            if (hp <= 0) {
+                document.getElementById('e-left').style.opacity = '0.3';
+                tg.showAlert("🎉 برج سمت چپ دشمن نابود شد!");
+            }
         }
     }
 </script>
 </body>
 </html>
+
